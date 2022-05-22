@@ -2,10 +2,12 @@
 #include <Keypad.h>
 #include <binary.h>
 
-/*
   TaskHandle_t Task1;
   void loop2( void * parameter )
   {
+    int trig = 33;
+int echo = 32;
+int buzz = 2;
   for (;;) {
       digitalWrite(trig,HIGH);
       delayMicroseconds(10);
@@ -21,11 +23,7 @@
        Serial.println(distance);
   }
   }
-*/
 
-int trig = 4;
-int echo = 23;
-int buzz = 2;
 
 #define ROW_L     3 // four rows
 #define COLUMN_L  3 // three columns
@@ -95,6 +93,10 @@ byte rowPins_c[ROW_C] = {5}; //connect to the row pinouts of the keypad
 byte colPins_c[COL_C] = {21, 3, 18, 19}; //connect to the column pinouts of the keypad
 Keypad keypad_controls = Keypad( makeKeymap(control_keypad), rowPins_c, colPins_c, ROW_C, COL_C);
 
+int trig = 33;
+int echo = 32;
+int buzz = 2;
+
 void setup() {
   Serial.begin(9600);
   input_word.reserve(6); // maximum input
@@ -106,7 +108,6 @@ void setup() {
   pinMode(22, INPUT_PULLUP);
   pinMode(23, INPUT_PULLUP);
 
-  /*
     xTaskCreatePinnedToCore(
     loop2,          // name of the task function
     "Ultrasonic sensor",  // name of the task
@@ -115,7 +116,6 @@ void setup() {
     0,              // priority of task, starting from 0(Highestpriority) *IMPORTANT*( if set to 1 and there is no activity in your 2nd loop, it will reset the esp32)
     &Task1,         // Reference name of taskHandle variable
     0);             // choose core (0 or 1)
-  */
 
 }
 //functions for letter keypad
@@ -296,7 +296,6 @@ void loop() {
           }
           else {
             input_word = ""; // clear input
-            digitalWrite(buzz, HIGH); //buzz sound on wrong buttons pressed.
           }
         }
         else {
