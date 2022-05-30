@@ -1,42 +1,19 @@
 
 #include <Keypad.h>
-#include <binary.h>
 
-  TaskHandle_t Task1;
-  void loop2( void * parameter )
-  {
-    int trig = 33;
-int echo = 32;
-int buzz = 2;
-  for (;;) {
-      digitalWrite(trig,HIGH);
-      delayMicroseconds(10);
-      digitalWrite(trig,LOW);
-      long duration = pulseIn(echo, HIGH);
-      int distance = (duration * 0.034)/2;
-      if(distance<=10){
-        digitalWrite(buzz,HIGH);
-      }
-      else{
-        digitalWrite(buzz,LOW);
-      }
-       Serial.println(distance);
-  }
-  }
-
-
-#define ROW_L     3 // four rows
-#define COLUMN_L  3 // three columns
+const byte ROW_L = 4; // four rows
+const byte COLUMN_L =4; // four columns
 
 //initializing keypad of lettrs
 char letter_keypad[ROW_L][COLUMN_L] = {
-  {'1', '2', '.'},
-  {'3', '4', ','},
-  {'5', '6', '>'}
-  //>=next letter
+  {'1','2','"','s'},
+  {'3','4','\'','m'},
+  {'5','6','?','c'},
+  {',','.','>','n'}
+  //s=space, m = mode,c=clear last input, n=new new_message,>=new letter
 };
-byte pin_rows_l[ROW_L] = {13, 12, 14};
-byte pin_column_l[COLUMN_L] = {27, 26, 25};
+byte pin_rows_l[ROW_L] = {23,22,3,21};
+byte pin_column_l[COLUMN_L] = {19,18,5,17};
 Keypad keypad_letters = Keypad( makeKeymap(letter_keypad), pin_rows_l, pin_column_l, ROW_L, COLUMN_L);
 const String A = "1";
 const String B = "13";
@@ -64,42 +41,32 @@ const String W = "2346";
 const String X = "1256";
 const String Y = "12456";
 const String Z = "1456";
-String input_word;
+String input_letter;
 String control_keys;
-String message = "";
+String new_message = "";
 
 //initializing keypad of numbers
-#define ROW_N     3 // four rows
-#define COLUMN_N  3 // three columns
+#define ROW_N     4 // four rows
+#define COLUMN_N  4 // three columns
 char number_keypad[ROW_N][COLUMN_N] = {
-  {'1', '2', '3'},
-  {'4', '5', '6'},
-  {'7', '8', '9'}
+ {'1','2','3','s'},
+ {'4','5','6','m'},
+ {'7','8','9','c'},
+ {'*','0','#','n'}
 };
 
-byte pin_rows_n[ROW_N] = {13, 12, 14};
-byte pin_column_n[COLUMN_N] = {27, 26, 25};
+byte pin_rows_n[ROW_N] = {23,22,3,21};
+byte pin_column_n[COLUMN_N] = {19,18,5,17};
 Keypad keypad_numbers = Keypad( makeKeymap(number_keypad), pin_rows_n, pin_column_n, ROW_N, COLUMN_N);
 
-//initializing control keypad
-#define ROW_C  1
-#define COL_C  4
-char control_keypad[ROW_C][COL_C] = {
-  {'s', 'c', 'n', 'm'}
-  //s=space, m = mode,c=clear last input, n=new message
-};
-
-byte rowPins_c[ROW_C] = {5}; //connect to the row pinouts of the keypad
-byte colPins_c[COL_C] = {21, 3, 18, 19}; //connect to the column pinouts of the keypad
-Keypad keypad_controls = Keypad( makeKeymap(control_keypad), rowPins_c, colPins_c, ROW_C, COL_C);
-
-int trig = 33;
-int echo = 32;
-int buzz = 2;
+int trig = 26;
+int echo = 25;
+int buzz = 4;
 
 void setup() {
   Serial.begin(9600);
-  input_word.reserve(6); // maximum input
+  input_letter.reserve(6); // maximum input
+
   //ultrasonic sensor
   pinMode(trig, OUTPUT);
   pinMode(buzz, OUTPUT);
@@ -107,23 +74,7 @@ void setup() {
   //dipswitch
   pinMode(22, INPUT_PULLUP);
   pinMode(23, INPUT_PULLUP);
-
-    xTaskCreatePinnedToCore(
-    loop2,          // name of the task function
-    "Ultrasonic sensor",  // name of the task
-    1000,           // memory assigned for the task
-    NULL,           // parameter to pass if any
-    0,              // priority of task, starting from 0(Highestpriority) *IMPORTANT*( if set to 1 and there is no activity in your 2nd loop, it will reset the esp32)
-    &Task1,         // Reference name of taskHandle variable
-    0);             // choose core (0 or 1)
-
 }
-//functions for letter keypad
-void type_letters() {
-
-}
-
-//function for binary switch
 
 int bin2int(int numvalues, ...)
 {
@@ -148,203 +99,236 @@ int switch_mode = 0;
 int type_mode = 0;
 int input_num;
 void loop() {
-  switch_mode = bin2int(2, 22, 23); //getting the status of two pins
-  if (switch_mode == B00) {
+  
     if (type_mode == 0) {
-      char key_l = keypad_letters.getKey();
-      if (key_l) {
+        char key_l = keypad_letters.getKey();
+        if (key_l) {
         Serial.println(key_l);
-
-        if (key_l == '.') {
-          input_word = ""; // clear input
-          message += ". ";
-        }
-        else if (key_l == ',') {
-          input_word = "";
-          message += ", ";
-        }
-        else if (key_l == '>') {
-          if      (A == input_word) {
-            Serial.println("A");
-            message += "A";
-            input_word = "";
+          if (key_l == 's') {
+            Serial.println("adding space");
+            new_message += " ";
           }
-          else if (B == input_word) {
-            Serial.println("B");
-            message += "B";
-            input_word = "";
+          else if (key_l == 'c') {
+          Serial.println("removing last input");
+            new_message = new_message.substring(0, new_message.length() - 2);
+          Serial.println(new_message);
           }
-          else if (C == input_word) {
-            Serial.println("C");
-            message += "C";
-            input_word = "";
+          else if (key_l == 'n') {
+            Serial.println(new_message);
+            Serial.println("type new message");
+            new_message = " ";
           }
-          else if (D == input_word) {
-            Serial.println("D");
-            message += "D";
-            input_word = "";
+          else if (key_l == 'm') {
+            Serial.println("changing keypad mode");
+            if (type_mode == 1) {
+              type_mode = 0;
+            }
+            else {
+              type_mode = 1;
+            }
           }
-          else if (E == input_word) {
-            Serial.println("E");
-            message += "E";
-            input_word = "";
+          else if (key_l == '.') {
+            input_letter = ""; // clear input
+            new_message += ". ";
           }
-          else if (F == input_word) {
-            Serial.println("F");
-            message += "F";
-            input_word = "";
+          else if (key_l == ',') {
+            input_letter = "";
+            new_message += ", ";
           }
-          else if (G == input_word) {
-            Serial.println("G");
-            message += "G";
-            input_word = "";
+          else if(key_l=='?'){
+            input_letter = "";
+            new_message += "?";
           }
-          else if (H == input_word) {
-            Serial.println("H");
-            message += "H";
-            input_word = "";
+          else if(key_l=='"'){
+            input_letter = "";
+            new_message += "\"";
           }
-          else if (I == input_word) {
-            Serial.println("I");
-            message += "I";
-            input_word = "";
+          else if(key_l=='/'){
+            input_letter = "";
+            new_message += "/";
           }
-          else if (J == input_word) {
-            Serial.println("J");
-            message += "J";
-            input_word = "";
-          }
-          else if (K == input_word) {
-            Serial.println("K");
-            message += "K";
-            input_word = "";
-          }
-          else if (L == input_word) {
-            Serial.println("L");
-            message += "L";
-            input_word = "";
-          }
-          else if (M == input_word) {
-            Serial.println("M");
-            message += "M";
-            input_word = "";
-          }
-          else if (N == input_word) {
-            Serial.println("N");
-            message += "N";
-            input_word = "";
-          }
-          else if (O == input_word) {
-            Serial.println("O");
-            message += "O";
-            input_word = "";
-          }
-          else if (P == input_word) {
-            Serial.println("P");
-            message += "P";
-            input_word = "";
-          }
-          else if (Q == input_word) {
-            Serial.println("Q");
-            message += "Q";
-            input_word = "";
-          }
-          else if (R == input_word) {
-            Serial.println("R");
-            message += "R";
-            input_word = "";
-          }
-          else if (S == input_word) {
-            Serial.println("S");
-            message += "S";
-            input_word = "";
-          }
-          else if (T == input_word) {
-            Serial.println("T");
-            message += "T";
-            input_word = "";
-          }
-          else if (U == input_word) {
-            Serial.println("U");
-            message += "U";
-            input_word = "";
-          }
-          else if (V == input_word) {
-            Serial.println("V");
-            message += "V";
-            input_word = "";
-          }
-          else if (W == input_word) {
-            Serial.println("W");
-            message += "W";
-            input_word = "";
-          }
-          else if (X == input_word) {
-            Serial.println("X");
-            message += "X";
-            input_word = "";
-          }
-          else if (Y == input_word) {
-            Serial.println("Y");
-            message += "Y";
-            input_word = "";
-          }
-          else if (Z == input_word) {
-            Serial.println("Z");
-            message += "Z";
-            input_word = "";
-          }
-          else {
-            input_word = ""; // clear input
-          }
+          else if (key_l == '>') {
+            if      (A == input_letter) {
+              Serial.println("A");
+              new_message += "A";
+              input_letter = "";
+            }
+            else if (B == input_letter) {
+              Serial.println("B");
+              new_message += "B";
+              input_letter = "";
+            }
+            else if (C == input_letter) {
+              Serial.println("C");
+              new_message += "C";
+              input_letter = "";
+            }
+            else if (D == input_letter) {
+              Serial.println("D");
+              new_message += "D";
+              input_letter = "";
+            }
+            else if (E == input_letter) {
+              Serial.println("E");
+              new_message += "E";
+              input_letter = "";
+            }
+            else if (F == input_letter) {
+              Serial.println("F");
+              new_message += "F";
+              input_letter = "";
+            }
+            else if (G == input_letter) {
+              Serial.println("G");
+              new_message += "G";
+              input_letter = "";
+            }
+            else if (H == input_letter) {
+              Serial.println("H");
+              new_message += "H";
+              input_letter = "";
+            }
+            else if (I == input_letter) {
+              Serial.println("I");
+              new_message += "I";
+              input_letter = "";
+            }
+            else if (J == input_letter) {
+              Serial.println("J");
+              new_message += "J";
+              input_letter = "";
+            }
+            else if (K == input_letter) {
+              Serial.println("K");
+              new_message += "K";
+              input_letter = "";
+            }
+            else if (L == input_letter) {
+              Serial.println("L");
+              new_message += "L";
+              input_letter = "";
+            }
+            else if (M == input_letter) {
+              Serial.println("M");
+              new_message += "M";
+              input_letter = "";
+            }
+            else if (N == input_letter) {
+              Serial.println("N");
+              new_message += "N";
+              input_letter = "";
+            }
+            else if (O == input_letter) {
+              Serial.println("O");
+              new_message += "O";
+              input_letter = "";
+            }
+            else if (P == input_letter) {
+              Serial.println("P");
+              new_message += "P";
+              input_letter = "";
+            }
+            else if (Q == input_letter) {
+              Serial.println("Q");
+              new_message += "Q";
+              input_letter = "";
+            }
+            else if (R == input_letter) {
+              Serial.println("R");
+              new_message += "R";
+              input_letter = "";
+            }
+            else if (S == input_letter) {
+              Serial.println("S");
+              new_message += "S";
+              input_letter = "";
+            }
+            else if (T == input_letter) {
+              Serial.println("T");
+              new_message += "T";
+              input_letter = "";
+            }
+            else if (U == input_letter) {
+              Serial.println("U");
+              new_message += "U";
+              input_letter = "";
+            }
+            else if (V == input_letter) {
+              Serial.println("V");
+              new_message += "V";
+              input_letter = "";
+            }
+            else if (W == input_letter) {
+              Serial.println("W");
+              new_message += "W";
+              input_letter = "";
+            }
+            else if (X == input_letter) {
+              Serial.println("X");
+              new_message += "X";
+              input_letter = "";
+            }
+            else if (Y == input_letter) {
+              Serial.println("Y");
+              new_message += "Y";
+              input_letter = "";
+            }
+            else if (Z == input_letter) {
+              Serial.println("Z");
+              new_message += "Z";
+              input_letter = "";
+            }
+            else {
+              input_letter = ""; // clear input
+            }
         }
         else {
-          input_word += key_l; // append new character to input string
+          input_letter += key_l; // append new character to input string
         }
       }
     }
     else {
       char key_n = keypad_numbers.getKey();
       if (key_n) {
-        Serial.println(key_n);
-        message += key_n;
-      }
-
-    }
-  }
-  else if (switch_mode == B10) {
-    Serial.println("B10");
-  }
-  else if (switch_mode == B01) {
-    Serial.println("B01");
-  }
-  else if (switch_mode == B11) {
-    char key_c = keypad_controls.getKey();
-    if (key_c) {
-      if (key_c == 's') {
-        Serial.println("adding space");
-        message += " ";
-      }
-      else if (key_c == 'c') {
-        Serial.println("removing last input");
-        message = message.substring(0, message.length() - 2);
-        Serial.println(message);
-      }
-      else if (key_c == 'n') {
-        Serial.println(message);
-        Serial.println("type new message");
-        message = " ";
-      }
-      else if (key_c == 'm') {
-        Serial.println("changing keypad mode");
-        if (type_mode == 1) {
-          type_mode = 0;
+        if (key_n == 's') {
+          Serial.println("adding space");
+          new_message += " ";
         }
-        else {
-          type_mode = 1;
+          else if (key_n == 'c') {
+          Serial.println("removing last input");
+          new_message = new_message.substring(0, new_message.length() - 2);
+          Serial.println(new_message);
         }
+        else if (key_n == 'n') {
+          Serial.println(new_message);
+          Serial.println("type new message");
+          new_message = " ";
+        }
+        else if (key_n == 'm') {
+          Serial.println("changing keypad mode");
+          if (type_mode == 1) {
+            type_mode = 0;
+          }
+          else {
+            type_mode = 1;
+          }
+        }
+        else{
+          Serial.println(key_n);
+          new_message += key_n;
+         }
       }
     }
-
+      digitalWrite(trig,HIGH);
+      delayMicroseconds(10);
+      digitalWrite(trig,LOW);
+      long duration = pulseIn(echo, HIGH);
+      int distance = (duration * 0.034)/2;
+      if(distance<=10){
+        digitalWrite(buzz,HIGH);
+      }
+      else{
+        digitalWrite(buzz,LOW);
+      }
   }
-}
+    
