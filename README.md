@@ -1,16 +1,45 @@
 
 #include <Keypad.h>
+#include <WiFi.h>
+#include <ESP_Mail_Client.h>
 
+//wifi connection
+#define Wifi_SSID "Redmi9C"  
+#define Wifi_PASS "bisma42001"
+
+const char* ssid = Wifi_SSID; 
+const char* passcode = Wifi_PASS;
+
+//email
+//host
+#define SMTP_HOST "smtp.gmail.com"
+#define SMTP_PORT 465
+//signin
+#define AUTHOR_EMAIL "xzyrandom21@gmail.com"
+#define AUTHOR_PASSWORD "ktpwcrfpjyjususu"
+//receiver
+#define RECIPIENT_EMAIL "bisma1ijaz1@gmail.com"
+//SMTP Session object
+SMTPSession smtp;
+//Message object
+SMTP_Message message;
+
+//session config data
+ESP_Mail_Session session;
+
+
+//KeyPad Stuff
 const byte ROW_L = 4; // four rows
 const byte COLUMN_L =4; // four columns
 
 //initializing keypad of lettrs
 char letter_keypad[ROW_L][COLUMN_L] = {
-  {'1','2','"','s'},
-  {'3','4','\'','m'},
-  {'5','6','?','c'},
-  {',','.','>','n'}
+  {'1','2','3','s'},
+  {'4','5','6','m'},
+  {'?','"','>','c'},
+  {',','.','e','n'}
   //s=space, m = mode,c=clear last input, n=new new_message,>=new letter
+  //e=send email
 };
 byte pin_rows_l[ROW_L] = {23,22,3,21};
 byte pin_column_l[COLUMN_L] = {19,18,5,17};
@@ -59,8 +88,8 @@ byte pin_rows_n[ROW_N] = {23,22,3,21};
 byte pin_column_n[COLUMN_N] = {19,18,5,17};
 Keypad keypad_numbers = Keypad( makeKeymap(number_keypad), pin_rows_n, pin_column_n, ROW_N, COLUMN_N);
 
-int trig = 26;
-int echo = 25;
+int trig = 27;
+int echo = 26;
 int buzz = 4;
 
 void setup() {
@@ -71,31 +100,19 @@ void setup() {
   pinMode(trig, OUTPUT);
   pinMode(buzz, OUTPUT);
   pinMode(echo, INPUT);
-  //dipswitch
-  pinMode(22, INPUT_PULLUP);
-  pinMode(23, INPUT_PULLUP);
+
+  // Connect to Wi-Fi
+  WiFi.begin(ssid, passcode);
+  while (WiFi.status() != WL_CONNECTED) {
+  delay(500);
+  Serial.print(".");}
+  Serial.println("");
+  Serial.println("WiFi connected");
+
+  //email debug
+  smtp.debug(1);
 }
 
-int bin2int(int numvalues, ...)
-{
-  int total = 0;
-  va_list values;
-  va_start(values, numvalues);
-
-  for (; numvalues > 0; numvalues--)
-    if (!(digitalRead(va_arg(values, int))) )
-      total += powint(2, numvalues - 1);
-  va_end(values);
-  return total;
-}
-int powint(int base, int exponent)
-{
-  int result = 1;
-  for (; exponent > 0; exponent--)
-    result *= base;
-  return result;
-}
-int switch_mode = 0;
 int type_mode = 0;
 int input_num;
 void loop() {
@@ -127,6 +144,36 @@ void loop() {
               type_mode = 1;
             }
           }
+          else if(key_l=='e'){
+                        //session config
+            session.server.host_name = SMTP_HOST;
+            session.server.port = SMTP_PORT;
+            session.login.email = AUTHOR_EMAIL;
+            session.login.password = AUTHOR_PASSWORD;
+            session.login.user_domain = "";
+
+            //message
+            message.sender.name = "ESP";
+            message.sender.email = AUTHOR_EMAIL;
+            message.subject = "Email";
+            message.addRecipient("Bisma", RECIPIENT_EMAIL);
+
+            //html message
+            String htmlMsg = "<div style=\"color:blue;\"><h1>HELLO!</h1><p>"+new_message+"</p></div>";
+            message.html.content = htmlMsg.c_str();
+            message.text.charSet = "text here?";
+            message.text.charSet = new_message;
+            message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+
+            //server connection
+            if (!smtp.connect(&session))
+                              return;  
+            //Start sending Email and close the session */
+            if (!MailClient.sendMail(&smtp, &message))
+                 Serial.println("Error sending Email, " + smtp.errorReason());
+            //buzzer indication on email sent
+            digitalWrite(buzz,HIGH);
+          }
           else if (key_l == '.') {
             input_letter = ""; // clear input
             new_message += ". ";
@@ -139,13 +186,10 @@ void loop() {
             input_letter = "";
             new_message += "?";
           }
+          
           else if(key_l=='"'){
             input_letter = "";
             new_message += "\"";
-          }
-          else if(key_l=='/'){
-            input_letter = "";
-            new_message += "/";
           }
           else if (key_l == '>') {
             if      (A == input_letter) {
