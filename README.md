@@ -1,5 +1,5 @@
 >> Project Description::
-   This porject ocntains a keypad brielle system made using ESP32 and arduino IDE. They keypad allwos for messages to be written and sent via email and whats app.
+   This porject ocntains a keypad brielle system made using ESP32 and arduino IDE. They keypad allwos for messages to be written and sent via email and whats app. It also contains and ultrasonic sensor that cna help the blind detect any nearby obstacles.
 
 >>Repository:
   1. Individual arduino files for each functionality
